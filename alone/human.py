@@ -1,43 +1,40 @@
 from PIL import Image, ImageDraw
 import numpy as np
+import os
 
 
 def color_human(ctx):
-    human = Image.open("../static/human_pre.png").convert("RGBA")
-    data = np.array(human)
+    # Get path to human
+    maindir = os.path.dirname(__file__)
+    human_path = os.path.join(maindir, "../assets/human_pre.png")
 
-    # Replace human shadow with color
-    red, green, blue, alpha = data.T
-    human_shadow = (red == 0) & (blue == 0) & (green == 0)
-    data[..., :-1][human_shadow.T] = ctx.get("shadow")
+    # Load human template
+    human = Image.open(human_path).convert("RGBA")
+    data_original = np.array(human)
 
-    # Replace human body with color
-    red, green, blue, alpha = data.T
-    human_body = (red == 255) & (blue == 255) & (green == 255)
-    data[..., :-1][human_body.T] = ctx.get("body")
+    # Build human body
+    data = data_original.copy()
+    red, green, blue, _ = data.T
+    human_body_selector = (red == 255) & (blue == 255) & (green == 255)
+    data[..., :-1][human_body_selector.T] = ctx.get("body")
+    # Remove shadow
+    human_shadow_selector = (red == 0) & (blue == 0) & (green == 0)
+    data[...][human_shadow_selector.T] = (0, 0, 0, 0)
 
-    human = Image.fromarray(data)
-    return human
+    # Create human body
+    human_body = Image.fromarray(data)
 
+    # Build human shadow
+    data = data_original.copy()
+    red, green, blue, _ = data.T
+    human_shadow_shadow = (red == 0) & (blue == 0) & (green == 0)
+    data[..., :-1][human_shadow_shadow.T] = ctx.get("shadow")
+    # Remove body
+    human_body_selector = (red == 255) & (blue == 255) & (green == 255)
+    data[...][human_body_selector.T] = (0, 0, 0, 0)
 
-def inside(human, size, pos) -> bool:
-    if (human[0] < pos[0] and pos[0] < human[0] + size[0]) and (
-        human[1] < pos[1] and pos[1] < human[1] + size[1]
-    ):
-        return True
+    # Create human shadow
+    human_shadow = Image.fromarray(data)
 
-def isRectangleOverlap(R1, R2):
-    if (R1[0]>=R2[2]) or (R1[2]<=R2[0]) or (R1[3]<=R2[1]) or (R1[1]>=R2[3]):
-        return False
-
-    return True
-
-def overlap(humans, size, pos) -> bool:
-    for human in humans:
-        rect1 = [human[0], human[1], human[0] + size[0], human[1] + size[1]]
-        rect2 = [pos[0], pos[1], pos[0] + size[0], pos[1] + size[1]]
-
-        if isRectangleOverlap(rect1, rect2):
-            return True
-
-    return False
+    # Return body and shadow
+    return (human_body, human_shadow)
