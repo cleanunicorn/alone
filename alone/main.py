@@ -4,7 +4,9 @@ import random
 import numpy as np
 import time
 
+from alone.background import background
 from alone.human import color_human
+
 
 @click.command(help="Feel lonely")
 @click.option(
@@ -42,7 +44,19 @@ def cli(ctx, width, height, random_seed, humans):
     )
 
     # Draw background
-    # ???
+    background_image = background(
+        ctx={
+            "width": width,
+            "height": height,
+            "background_color": (
+                int(human_body_color[0] ^ 0xff),
+                int(human_body_color[1] ^ 0xff),
+                int(human_body_color[2] ^ 0xff),
+                255,
+            ),
+        }
+    )
+    img.paste(background_image, (0, 0), background_image)
 
     # Load human
     human_body, human_shadow = color_human(
@@ -59,31 +73,33 @@ def cli(ctx, width, height, random_seed, humans):
 
     # Load lonely human
     human_lonely_body_color = (
-        0xff - human_body_color[0],
-        0xff - human_body_color[1],
-        0xff - human_body_color[2],
+        0xFF - human_body_color[0],
+        0xFF - human_body_color[1],
+        0xFF - human_body_color[2],
     )
     human_lonely_shadow_color = (
         # max(0, human_lonely_body_color[0] - shadow_distance),
         # max(0, human_lonely_body_color[1] - shadow_distance),
         # max(0, human_lonely_body_color[2] - shadow_distance),
-        0xff - human_shadow_color[0],
-        0xff - human_shadow_color[1],
-        0xff - human_shadow_color[2],
+        0xFF - human_shadow_color[0],
+        0xFF - human_shadow_color[1],
+        0xFF - human_shadow_color[2],
     )
     human_lonely_body, human_lonely_shadow = color_human(
         ctx={"body": human_lonely_body_color, "shadow": human_lonely_shadow_color}
     )
 
     # Pick lonely human position
-    human_lonely_pos = (random.randint(width / 3, width * 2 / 3), random.randint(height / 2, height * 2 / 3))
+    human_lonely_pos = (
+        random.randint(width / 3, width * 2 / 3),
+        random.randint(height / 2, height * 2 / 3),
+    )
 
     # Draw shadows
     for human in humans:
         img.paste(human_shadow, human, human_shadow)
 
     img.paste(human_lonely_shadow, human_lonely_pos, human_lonely_shadow)
-
 
     # Draw bodies
     for human in humans:
